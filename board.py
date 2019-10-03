@@ -7,12 +7,37 @@ Author: Hung Guei (moporgic)
         Computer Games and Intelligence (CGI) Lab, NCTU, Taiwan
         http://www.aigames.nctu.edu.tw
 """
+import numpy as np
 
+class Constant:
+    """ A constant class to map index to value of tile and score """
+    def __init__(self):
+        
+        self._index_to_tile = np.array([0] * 15)
+        self._index_to_score = np.array([0] * 15)
+        self._build_table()
+    def _build_table(self):
+        
+        self._index_to_tile[:4] = np.arange(4)
+        
+        for i in range(11):
+            self._index_to_tile[i+4] = self._index_to_tile[i+3] * 2
+        
+        self._index_to_score[3] = 3
+        for i in range(11):
+            self._index_to_score[i+4] = self._index_to_score[i+3] * 3
+    def index2tile(self, index):
+        return self._index_to_tile[index]
+    
+    def index2score(self, index):
+        return self._index_to_score[index]
+        
 class board:
     """ simple implementation of 2048 puzzle """
     
     def __init__(self, state = None):
         self.state = state[:] if state is not None else [0] * 16
+        self.constant_table = Constant()
         return
     
     def __getitem__(self, pos):
@@ -29,7 +54,7 @@ class board:
         """
         if pos >= 16 or pos < 0:
             return -1
-        if tile != 1 and tile != 2:
+        if tile != 1 and tile != 2 and tile != 3:
             return -1
         self.state[pos] = tile
         return 0
@@ -52,15 +77,25 @@ class board:
     def slide_left(self):
         move, score = [], 0
         for row in [self.state[r:r + 4] for r in range(0, 16, 4)]:
-            buf = sorted(row, key = lambda t: not t) + [0]
-            while buf[0]:
-                if buf[0] == buf[1]:
-                    buf = buf[1:] + [0]
+            buf = row + [0]
+            merge = False
+            while buf[0] and not merge: 
+                if buf[0] == buf[1] and buf[0] >2:
+                    buf = buf[1:]
                     buf[0] += 1
-                    score += 1 << buf[0]
+                    merge = True
+                    score += self.constant_table.index2score(buf[0])
+                
+                elif buf[0] > 0 and buf[1] > 0 and buf[0] + buf[1] == 3:
+                    buf = buf[1:]
+                    buf[0] = 3
+                    score += self.constant_table.index2score(buf[0])
+                    merge = True
                 move += [buf[0]]
-                buf = buf[1:]
+                if not merge:
+                    buf = buf[1:]
             move += buf[1:]
+                
         if move != self.state:
             self.state = move
             return score
@@ -129,15 +164,14 @@ class board:
     def __str__(self):
         state = '+' + '-' * 24 + '+\n'
         for row in [self.state[r:r + 4] for r in range(0, 16, 4)]:
-            state += ('|' + ''.join('{0:6d}'.format((1 << t) & -2) for t in row) + '|\n')
+            state += ('|' + ''.join('{0:6d}'.format(self.constant_table.index2tile(t)) for t in row) + '|\n')
         state += '+' + '-' * 24 + '+'
         return state
     
     
 if __name__ == '__main__':
-    print('2048 Demo: board.py\n')
+    print('Threes Demo: board.py\n')
     
     state = board()
     state[10] = 10
     print(state)
-    

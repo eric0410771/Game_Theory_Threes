@@ -47,14 +47,14 @@ class episode:
     
     def take_turns(self, play, evil):
         self.ep_time = self.millisec()
-        if max(self.step() + 1, 2) % 2 != 0:
+        if max(self.step() + 1, 9) % 2 == 0:
             return play
         else:
             return evil
     
     def last_turns(self, play, evil):
-        return self.take_turns(evil, play)
-    
+        agent = self.take_turns(evil, play)
+        return agent
     def step(self, who = -1):
         size = len(self.ep_moves)
         if who == action.slide.type:

@@ -18,7 +18,7 @@ import sys
 
 
 if __name__ == '__main__':
-    print('2048 Demo: ' + " ".join(sys.argv))
+    print('Threes Demo: ' + " ".join(sys.argv))
     print()
     
     total, block, limit = 1000, 0, 0
@@ -50,30 +50,34 @@ if __name__ == '__main__':
         stat.load(input)
         input.close()
         summary |= stat.is_finished()
-    
+    print(play_args) 
     play = player(play_args)
     evil = rndenv(evil_args)
-    
     while not stat.is_finished():
+        counter = 0
         play.open_episode("~:" + evil.name())
         evil.open_episode(play.name() + ":~")
         
         stat.open_episode(play.name() + ":" + evil.name())
         game = stat.back()
+        player_lastslide = -1
         while True:
             who = game.take_turns(play, evil)
-            move = who.take_action(game.state())
+            if who.info['role'] == "player":
+                move, slide_direction = who.take_action(game.state())
+                player_lastslide = slide_direction
+            else:
+                move = who.take_action(game.state(), player_lastslide)
             if not game.apply_action(move) or who.check_for_win(game.state()):
                 break
+            counter += 1
         win = game.last_turns(play, evil)
         stat.close_episode(win.name())
         
         play.close_episode(win.name())
         evil.close_episode(win.name())
-    
     if summary:
         stat.summary()
-    
     if save:
         output = open(save, "w")
         stat.save(output)
