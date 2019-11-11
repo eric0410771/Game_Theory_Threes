@@ -201,7 +201,7 @@ class weight_agent(random_agent):
             self.net += [weight(int(init))]
     def load_weight(self, init):
         input = open(init, 'rb')
-        size = array('L')
+        size = array('I')
         size.fromfile(input, 1)
         size = size[0]
         for i in range(size):
@@ -211,7 +211,7 @@ class weight_agent(random_agent):
         return 
     def save_weight(self, path):
         output = open(path, 'wb')
-        array('L', [len(self.net)]).tofile(output)
+        array('I', [len(self.net)]).tofile(output)
 
         for w in self.net:
             w.save(output)
