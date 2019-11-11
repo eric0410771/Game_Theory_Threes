@@ -12,7 +12,7 @@ from board import board
 from action import action
 from episode import episode
 from statistic import statistic
-from agent import player
+from agent import player, weight_agent
 from agent import rndenv
 import sys
 
@@ -22,6 +22,7 @@ if __name__ == '__main__':
     print()
     
     total, block, limit = 1000, 0, 0
+    
     play_args, evil_args = "", ""
     load, save = "", ""
     summary = False
@@ -50,17 +51,27 @@ if __name__ == '__main__':
         stat.load(input)
         input.close()
         summary |= stat.is_finished()
-    print(play_args) 
-    play = player(play_args)
+    memory_size = 1000
+    play = weight_agent(play_args, memory_size = memory_size)
     evil = rndenv(evil_args)
+
+    epoch = 1
+    counter = 0
     while not stat.is_finished():
-        counter = 0
+        if epoch % 50 == 0:
+            print("Current epoch ",epoch)
+        epoch += 1
+        state_index = []
+        after_state_index = []
+        rewards = []
+
         play.open_episode("~:" + evil.name())
         evil.open_episode(play.name() + ":~")
         
         stat.open_episode(play.name() + ":" + evil.name())
         game = stat.back()
         player_lastslide = -1
+        state = None
         while True:
             who = game.take_turns(play, evil)
             if who.info['role'] == "player":
@@ -68,14 +79,28 @@ if __name__ == '__main__':
                 player_lastslide = slide_direction
             else:
                 move = who.take_action(game.state(), player_lastslide)
-            if not game.apply_action(move) or who.check_for_win(game.state()):
+            
+            legal_action ,reward = game.apply_action(move)
+            if who.info['role'] == 'player':
+                if state == None:
+                    state = game.state().features()
+                else:
+                    state_index.append(state)
+                    after_state_index.append(game.state().features())
+                    rewards.append(reward)
+                    state = after_state_index[-1]
+
+            if not legal_action or who.check_for_win(game.state()):
                 break
-            counter += 1
+
         win = game.last_turns(play, evil)
         stat.close_episode(win.name())
         
         play.close_episode(win.name())
+        play.update_weight(state_index, rewards, after_state_index)
+
         evil.close_episode(win.name())
+    play.save_weight('weight.bin')
     if summary:
         stat.summary()
     if save:

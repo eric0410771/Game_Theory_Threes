@@ -16,6 +16,7 @@ class Constant:
         self._index_to_tile = np.array([0] * 15)
         self._index_to_score = np.array([0] * 15)
         self._build_table()
+        
     def _build_table(self):
         
         self._index_to_tile[:4] = np.arange(4)
@@ -26,6 +27,7 @@ class Constant:
         self._index_to_score[3] = 3
         for i in range(11):
             self._index_to_score[i+4] = self._index_to_score[i+3] * 3
+            
     def index2tile(self, index):
         return self._index_to_tile[index]
     
@@ -34,12 +36,22 @@ class Constant:
         
 class board:
     """ simple implementation of 2048 puzzle """
+    feature_index = [[0,1,2,3,4,5],[3,7,11,15,2,6],[15,14,13,12,11,10],[3,2,1,0,7,6],[0,4,8,12,1,5],[12,13,14,15,8,9,],[15,11,7,3,14,10],[4,5,6,7,8,9],[2,6,10,14,1,5],[11,10,9,8,7,6],[13,9,5,1,14,10],[7,6,5,4,11,10],[1,5,9,13,2,6],[8,9,10,11,4,5],[14,10,6,2,13,9],[0,1,2,4,5,6],[3,7,11,2,6,10],[15,14,13,11,10,9],[12,8,4,13,9,5],[3,2,1,7,6,5],[0,4,8,1,5,9],[12,13,14,8,9,10],[15,11,7,14,10,6],[4,5,6,8,9,10],[2,6,10,1,5,9],[11,10,9,7,6,5],[13,9,5,14,10,6],[7,6,5,11,10,9],[1,5,9,2,6,10],[8,9,10,4,5,6],[14,10,6,13,9,5]]
     
     def __init__(self, state = None):
         self.state = state[:] if state is not None else [0] * 16
         self.constant_table = Constant()
         return
-    
+    def features(self):
+        weight_index = []
+        for feature_index in board.feature_index:
+            index = 0
+            for i in feature_index:
+                index *= 12
+                index += min(self.state[i], 11)
+            weight_index.append(index)
+        return weight_index
+                
     def __getitem__(self, pos):
         return self.state[pos]
     
@@ -85,11 +97,12 @@ class board:
                     buf[0] += 1
                     merge = True
                     score += self.constant_table.index2score(buf[0])
-                
+                    #score += 1
                 elif buf[0] > 0 and buf[1] > 0 and buf[0] + buf[1] == 3:
                     buf = buf[1:]
                     buf[0] = 3
                     score += self.constant_table.index2score(buf[0])
+                    #score += 1
                     merge = True
                 move += [buf[0]]
                 if not merge:

@@ -10,8 +10,11 @@ Author: Hung Guei (moporgic)
 
 from board import board
 from action import action
+from weight import weight
+from array import array
 import random
 import numpy as np
+
 
 class bag:
     def __init__(self):
@@ -51,6 +54,9 @@ class agent:
     
     def check_for_win(self, state):
         return False
+    
+    def update_weight(self, after_states, rewards):
+        return 
     
     def property(self, key):
         return self.info[key] if key in self.info else None
@@ -157,7 +163,111 @@ class player(random_agent):
                 return action.slide(greedy_op), greedy_op
         return action(), -1
     
-    
+class weight_agent(random_agent):
+    def __init__(self, options = 'name=dummy init=65536', memory_size = 2000):
+        super().__init__("name=dummy role=player "+options)
+        self.net = []
+        self.alpha = 0.1/(4*8)
+        self.epsilon = 1.0
+        self.train_batch = 50
+        self.memory_size = memory_size
+        alpha = self.property('alpha')
+        self.test = False
+        if alpha is not None:
+            self.alpha = float(alpha)
+
+        init = self.property('init')
+        if init is not None:
+            self.init_weight(init)
+        load = self.property('load')
+        if load is not None:
+            self.load_weight(load)
+            self.test = True
+        train = self.property('train')
+
+        if train is not None:
+            self.test = False
+        if self.test:
+            self.epsilon = 1
+        print("net size :",len(self.net[0]))
+        return 
+    def __exit__(self, exc_type, exc_value, traceback):
+        save = self.property('save')
+        if save is not None:
+            self.save_weight(save)
+        return 
+    def init_weight(self, init):
+        for i in range(len(board.feature_index)):
+            self.net += [weight(int(init))]
+    def load_weight(self, init):
+        input = open(init, 'rb')
+        size = array('L')
+        size.fromfile(input, 1)
+        size = size[0]
+        for i in range(size):
+            self.net += [weight()]
+            self.net[-1].load(input)
+        
+        return 
+    def save_weight(self, path):
+        output = open(path, 'wb')
+        array('L', [len(self.net)]).tofile(output)
+
+        for w in self.net:
+            w.save(output)
+        return 
+    def update_weight(self, state_index, rewards, after_state_index):
+        self.epsilon += 0.0004
+        if self.test:
+            return
+        for i in reversed(range(len(state_index))):
+            if rewards[i] == -1:
+                delta = self.alpha * (0 - self.sum(state_index[i]))
+            else:
+                delta = self.alpha * (rewards[i] + self.sum(after_state_index[i]) - self.sum(state_index[i]))
+            for j, index in enumerate(state_index[i]):
+                self.net[j][index] += delta
+
+        return 
+    def get_weight(self):
+        return self.net[0]
+    def take_action(self, state):
+        
+        if self.info['name'] == 'dummy':
+            legal = [op for op in range(4) if board(state).slide(op) != -1]
+            if legal:
+                op = self.choice(legal)
+                return action.slide(op), op
+        elif self.info['name'] == 'greedy':
+            score_array = [board(state).slide(op) for op in range(4)]
+            greedy_op = np.argmax(score_array)
+            if score_array[greedy_op] != -1:
+                return action.slide(greedy_op), greedy_op
+        elif self.info['name'] == 'td_learning':
+            if np.random.uniform() < self.epsilon:
+                all_values = []
+                rewards = []
+                for op in range(4):
+                    tmp_board = board(state)
+                    reward = tmp_board.slide(op)
+                    rewards.append(reward)
+                    all_values.append(self.sum(tmp_board.features()) + reward)
+                
+                legal = [op for op in range(4) if rewards[op] != -1]
+                if legal:
+                    op = legal[np.argmax([all_values[op] for op in legal])]
+                    return action.slide(op), op
+            else:
+                legal = [op for op in range(4) if board(state).slide(op) != -1]
+                if legal:
+                    op = self.choice(legal)
+                    return action.slide(op), op
+        return action(), -1
+
+    def sum(self, indices):
+        return sum([self.net[i][index] for i,index in enumerate(indices)])
+
+
 if __name__ == '__main__':
     print('2048 Demo: agent.py\n')
     

@@ -38,12 +38,12 @@ class episode:
     def apply_action(self, move):
         reward = move.apply(self.state())
         if reward == -1:
-            return False
+            return False, reward
         usage = self.millisec() - self.ep_time
         record = move, reward, usage # action, reward, time usage
         self.ep_moves += [record]
         self.ep_score += reward
-        return True
+        return True, reward
     
     def take_turns(self, play, evil):
         self.ep_time = self.millisec()
@@ -134,7 +134,7 @@ class episode:
             minput.seek(ipt)
             t = 0
         return t
-    
+        
     def __str__(self):
         open = str(self.ep_open[0]) + "@" + str(self.ep_open[1])
         moves = "".join([str(m[0]) + ("[" + str(m[1]) + "]" if m[1] else "") + ("(" + str(m[2]) + ")" if m[2] else "") for m in self.ep_moves])
@@ -156,7 +156,8 @@ class episode:
     def millisec(self):
         return int(round(time.time() * 1000))
         
-    
+    def store_state(self, state):
+        self.store_state.append()
 if __name__ == '__main__':
     print('2048 Demo: episode.py\n')
     # action, reward, time usage
