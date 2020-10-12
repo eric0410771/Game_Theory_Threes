@@ -175,16 +175,16 @@ class weight_agent(random_agent):
         self.test = False
         if alpha is not None:
             self.alpha = float(alpha)
-
-        init = self.property('init')
-        if init is not None:
-            self.init_weight(init)
         load = self.property('load')
+        init = self.property('init')
+        if init is not None and load is None:
+            self.init_weight(init)
+        print("loading from ", load)
         if load is not None:
             self.load_weight(load)
             self.test = True
         train = self.property('train')
-
+        print(train)
         if train is not None:
             self.test = False
         if self.test:

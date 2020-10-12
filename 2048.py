@@ -52,6 +52,7 @@ if __name__ == '__main__':
         input.close()
         summary |= stat.is_finished()
     memory_size = 1000
+    print(play_args)
     play = weight_agent(play_args, memory_size = memory_size)
     evil = rndenv(evil_args)
 

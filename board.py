@@ -47,8 +47,8 @@ class board:
         for feature_index in board.feature_index:
             index = 0
             for i in feature_index:
-                index *= 12
-                index += min(self.state[i], 11)
+                index *= 11
+                index += min(self.state[i], 10)
             weight_index.append(index)
         return weight_index
                 
